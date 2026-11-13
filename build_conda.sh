@@ -79,6 +79,12 @@ source "$SLIME_DIR/docker/cuda-compat.sh"
 # DeepGEMM needs elfutils headers; DeepEP's NVSHMEM kernels need RDMA headers.
 micromamba install -n slime -c conda-forge rust elfutils rdma-core -y
 
+# Make SOCKS transport and protoc available before the first pip request.
+# Environment creation can remove packages installed by an earlier bootstrap.
+micromamba install -n slime -c conda-forge pysocks protobuf libprotobuf 'pip=25.1.*' -y
+export PROTOC="$CONDA_PREFIX/bin/protoc"
+"$PROTOC" --version
+
 # Pin the CUDA 13 runtime before installing SGLang or Slime dependencies.
 export PIP_CONSTRAINT="$CONDA_PREFIX/slime-constraints.txt"
 cat > "$PIP_CONSTRAINT" <<'REQ'

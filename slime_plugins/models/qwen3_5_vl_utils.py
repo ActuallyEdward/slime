@@ -14,6 +14,10 @@ def get_packed_cp_local_indices(
 ) -> torch.Tensor:
     """Map a THD CP rank's local tokens back to the full packed token stream."""
 
+    if cp_size == 1:
+        total_tokens = int(cu_seqlens[-1])
+        return torch.arange(total_tokens, device=device)
+
     boundaries = [int(value) for value in cu_seqlens]
     indices = []
     for start, end in zip(boundaries[:-1], boundaries[1:], strict=True):

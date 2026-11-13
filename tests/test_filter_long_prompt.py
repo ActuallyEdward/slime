@@ -112,5 +112,21 @@ def test_no_processor_path_still_preserves_order():
     assert [s.prompt for s in kept] == ["p0:5", "p2:5"]
 
 
+@pytest.mark.unit
+def test_multimodal_filter_uses_prepared_images_with_rendered_prompt():
+    images = [object(), object()]
+    sample = Sample(prompt="rendered prompt with image placeholders")
+    sample.multimodal_inputs = {"images": images}
+    calls = []
+
+    def processor(*, text, images):
+        calls.append((text, images))
+        return {"input_ids": [[1, 2, 3]]}
+
+    assert filter_long_prompt([sample], _Tokenizer(), processor, max_length=3) == [sample]
+    assert calls[0][0] == sample.prompt
+    assert calls[0][1] is images
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__]))

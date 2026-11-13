@@ -246,7 +246,7 @@ def _append_to_sample(
     sample.append_response_tokens(
         args,
         tokens=tokens_to_add,
-        log_probs=logprobs,
+        log_probs=logprobs if loss_mask_val == 1 else None,
         trainable=loss_mask_val == 1,
         meta_info=meta_info,
     )
@@ -288,9 +288,6 @@ def _update_multimodal_state(
 
 def _should_stop_on_finish(sample: Sample, finish_type: str) -> bool:
     match finish_type:
-        case "length":
-            sample.status = Sample.Status.TRUNCATED
-            return True
         case "abort":
             sample.status = Sample.Status.ABORTED
             return True
@@ -321,6 +318,7 @@ async def generate(args: Any, sample: Sample, sampling_params) -> Sample:
     current_image_data, response_tokens, budget, multimodal_train_inputs_buffer = _prepare_start_state(
         sample, state, args, sampling_params
     )
+    per_turn_max_new_tokens = sampling_params.get("max_new_tokens")
     try:
         env.reset()
         if budget is not None and budget <= 0:
@@ -330,7 +328,9 @@ async def generate(args: Any, sample: Sample, sampling_params) -> Sample:
         cur_sampling_params = sampling_params
         for turn_idx in range(config["max_turns"]):
             if budget is not None:
-                cur_sampling_params["max_new_tokens"] = budget
+                cur_sampling_params["max_new_tokens"] = (
+                    min(budget, per_turn_max_new_tokens) if per_turn_max_new_tokens is not None else budget
+                )
 
             response_text, new_response_tokens, new_response_log_probs, finish_type, meta_info = (
                 await _run_inference_step(url, sample.tokens, cur_sampling_params, current_image_data, state.tokenizer)

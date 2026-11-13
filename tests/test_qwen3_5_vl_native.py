@@ -79,6 +79,13 @@ def test_thd_cp_indices_select_two_chunks_per_packed_sequence():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("boundaries", [[0, 3, 8], [0, 5], [0]])
+def test_single_cp_rank_keeps_odd_length_packed_sequences(boundaries):
+    indices = get_packed_cp_local_indices(torch.tensor(boundaries), cp_size=1, cp_rank=0, device=torch.device("cpu"))
+    assert indices.tolist() == list(range(boundaries[-1]))
+
+
+@pytest.mark.unit
 def test_raw_qkv_loader_is_inverse_of_exporter():
     hidden_size = 3
     q = torch.arange(16 * hidden_size).reshape(16, hidden_size)
